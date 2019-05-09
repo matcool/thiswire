@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>This Wire</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="style.css">
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="https://vuejs.org/js/vue.js"></script>
+    </head>
+    <body>
+        <div id="messages">
+            <span v-for="message in messages" v-bind:key="message.id">{{ message.text }}<br></span>
+        </div>
+        <br>
+        <div id="message-sender">
+            <input v-model="message" type="text" placeholder="Type something here..." />
+            <button @click="sendMessage">Send</button>
+        </div>
+        <script src="client.js"></script>
+    </body>
+</html>
