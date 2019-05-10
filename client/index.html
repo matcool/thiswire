@@ -9,10 +9,7 @@
     </head>
     <body>
         <div id="messages">
-            <div v-for="message in messages" v-bind:key="message.id">
-                <span class="nickname">{{ message.author }}</span><span class="time">{{ message.timestampstr }}</span><br>
-                <span class="message">{{ message.text }}</span><br>
-            </div>
+            <message v-for="message in messages" v-bind:message="message" v-bind:key="message.id"></message>
         </div>
         <br>
         <div id="message-sender">

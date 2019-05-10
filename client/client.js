@@ -1,5 +1,12 @@
 const socket = io();
 
+Vue.component('message', {
+    props: ['message'],
+    template: `<div><span class="message-nickname">{{ message.author }}</span>
+    <span class="message-time">{{ message.timestampstr }}</span><br>
+    <span class="message-text">{{ message.text }}</span></div>`
+});
+
 const messages = new Vue({
     el: '#messages',
     data: {

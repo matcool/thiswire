@@ -9,17 +9,17 @@ body {
     overflow: auto;
 }
 
-#messages .message {
+.message-text {
     color: white;
     font-size: 1em;
     font-family: 'Heebo', sans-serif;
 }
-#messages .nickname {
+.message-nickname {
     color: white;
     font-size: 0.7em;
     font-family: 'Heebo', sans-serif;
 }
-#messages .time {
+.message-time {
     margin-left: 1em;
     color: gray;
     font-size: 0.6em;
