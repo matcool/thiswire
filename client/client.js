@@ -8,7 +8,12 @@ const messages = new Vue({
     }
 });
 
+function fancyTime(time) {
+    return (new Date(time)).toDateString();
+}
+
 function addMessage(msg) {
+    msg.timestampstr = fancyTime(msg.timestamp);
     messages.messages.push(msg);
 }
 
@@ -19,12 +24,16 @@ socket.on('chat message', (msg) => {
 const app = new Vue({
     el: '#message-sender',
     data: {
-        message: ''
+        message: '',
+        nickname: 'Joe'
     },
     methods: {
         sendMessage: function () {
-            if (this.message == '') return;
-            socket.emit('chat message', this.message);
+            if (this.message == '' || this.nickname == '') return;
+            socket.emit('chat message', {
+                text: this.message,
+                author: this.nickname
+            });
             this.message = '';
         }
     }

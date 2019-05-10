@@ -8,10 +8,12 @@ let io = socketio(http);
 let id = 0;
 const messages = [];
 
-function addMessage(text) {
-    let msg = {
-        text: text,
-        id: id
+function addMessage(msg) {
+    msg = {
+        id: id,
+        text: msg.text,
+        author: msg.author,
+        timestamp: new Date()
     };
     messages.push(msg);
     id++;
@@ -24,7 +26,7 @@ io.on('connection', (socket) => {
     console.log('New connection');
     messages.forEach(msg => io.emit('chat message', msg));
     socket.on('chat message', (msg) => {
-        console.log('new message! '+msg);
+        console.log('new message!\n'+JSON.stringify(msg, undefined, 4));
         io.emit('chat message', addMessage(msg));
     });
     socket.on('disconnect', () => {

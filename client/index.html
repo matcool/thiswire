@@ -9,12 +9,17 @@
     </head>
     <body>
         <div id="messages">
-            <span v-for="message in messages" v-bind:key="message.id">{{ message.text }}<br></span>
+            <div v-for="message in messages" v-bind:key="message.id">
+                <span class="nickname">{{ message.author }}</span><span class="time">{{ message.timestampstr }}</span><br>
+                <span class="message">{{ message.text }}</span><br>
+            </div>
         </div>
         <br>
         <div id="message-sender">
             <input v-model="message" type="text" placeholder="Type something here..." />
             <button @click="sendMessage">Send</button>
+            <br>
+            <input v-model="nickname" type="text" placeholder="Enter your nickname" />
         </div>
         <script src="client.js"></script>
     </body>

@@ -4,8 +4,24 @@ body {
     background: #101011;
 }
 
-#messages span {
+#messages {
+    height: 80vh;
+    overflow: auto;
+}
+
+#messages .message {
     color: white;
     font-size: 1em;
+    font-family: 'Heebo', sans-serif;
+}
+#messages .nickname {
+    color: white;
+    font-size: 0.7em;
+    font-family: 'Heebo', sans-serif;
+}
+#messages .time {
+    margin-left: 1em;
+    color: gray;
+    font-size: 0.6em;
     font-family: 'Heebo', sans-serif;
 }
