@@ -6,6 +6,7 @@
         <link rel="stylesheet" href="style.css">
         <script src="/socket.io/socket.io.js"></script>
         <script src="https://vuejs.org/js/vue.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
     </head>
     <body>
         <div id="messages">
@@ -13,10 +14,11 @@
         </div>
         <br>
         <div id="message-sender">
-            <input v-model="message" type="text" placeholder="Type something here..." />
-            <button @click="sendMessage">Send</button>
+            <textarea v-model="message" placeholder="Type something here..." :disabled="!loggedIn"></textarea>
+            <button @click="sendMessage" :disabled="!loggedIn">Send</button>
             <br>
-            <input v-model="nickname" type="text" placeholder="Enter your nickname" />
+            <input v-model="user.name" type="text" placeholder="Enter your nickname" :disabled="loggedIn" />
+            <button @click="login" :disabled="loggedIn">Login</button>
         </div>
         <script src="client.js"></script>
     </body>
