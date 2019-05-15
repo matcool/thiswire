@@ -52,7 +52,7 @@ app.use(express.static('client'));
 io.on('connection', (socket) => {
     console.log('New connection');
     let id;
-    socket.on('login', (user) => {
+    socket.on('login', (user, callback) => {
         // Look for another user with same name and check if logged in
         let usr = findUser({
             name: user.name
@@ -61,7 +61,7 @@ io.on('connection', (socket) => {
             console.log('new user! ' + JSON.stringify(user, undefined, 4));
             user = addUser(user);
         } else if (usr.loggedIn) {
-            io.emit('login', null);
+            callback(null);
             return;
         } else if (!usr.loggedIn) {
             console.log(user.name + ' logged back in');
@@ -69,7 +69,7 @@ io.on('connection', (socket) => {
         }
 
         id = user.id;
-        io.emit('login', user);
+        callback(user);
 
         io.emit('chat messages', messages);
         socket.on('chat message', (msg) => {

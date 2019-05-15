@@ -61,13 +61,11 @@ const app = new Vue({
         },
         login: function () {
             if (this.user.name == '') return;
-            socket.emit('login', this.user);
+            socket.emit('login', this.user, (user) => {
+                if (user == null) return;
+                this.loggedIn = true;
+                this.user = user;
+            });
         }
     }
-});
-
-socket.on('login', (user) => {
-    if (user == null) return;
-    app.loggedIn = true;
-    app.user = user;
 });
