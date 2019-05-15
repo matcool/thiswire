@@ -1,6 +1,7 @@
 'use strict';
 const express = require('express');
 const socketio = require('socket.io');
+const db = require('./db');
 
 let app = express();
 let http = require('http').Server(app);
@@ -10,6 +11,16 @@ let msgid = 0;
 const messages = [];
 let userid = 0;
 const users = [];
+
+db.connect(err => {
+    if (err) {
+        console.log('Error while conecting to database');
+        console.error(err);
+        process.exit(1);
+    } else {
+        console.log('Connected to database');
+    }
+});
 
 function addMessage(msg) {
     msg = {
