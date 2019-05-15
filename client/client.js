@@ -9,15 +9,32 @@ const imgpfp = 'https://images.unsplash.com/photo-1556220881-df28b44798ce?ixlib=
 
 Vue.component('message', {
     props: ['message'],
-    template: `<div class="message-parent"><img class="message-pfp" src="${imgpfp}"><div><span class="message-nickname">{{ message.author.name }}</span>
+    template: `<div class="message-parent"><img class="message-pfp" src="${imgpfp}"><div><span class="message-nickname">{{ author }}</span>
 <span class="message-time">{{ timestampstr }}</span><br>
 <div class="message-text" v-html="content"></div></div></div>`,
     computed: {
-        timestampstr: function() {
+        timestampstr() {
             return (new Date(this.message.timestamp)).toDateString();
         },
-        content: function() {
+        content() {
             return md.renderInline(this.message.text);
+        }
+    },
+    asyncComputed: {
+        author: {
+            get() {
+                return axios.get('/getUser', {
+                    params: {
+                        id: this.message.author
+                    }
+                }).then(response => {
+                    if (response.data === '') {
+                        return 'error';
+                    }
+                    return response.data.name;
+                });
+            },
+            default: 'loading...'
         }
     }
 });
@@ -25,8 +42,7 @@ Vue.component('message', {
 const messages = new Vue({
     el: '#messages',
     data: {
-        messages: [
-        ]
+        messages: []
     }
 });
 
@@ -52,15 +68,15 @@ const app = new Vue({
         }
     },
     methods: {
-        sendMessage: function () {
+        sendMessage() {
             if (this.message == '') return;
             socket.emit('chat message', {
                 text: this.message,
-                author: this.user.id
+                author: this.user._id
             });
             this.message = '';
         },
-        login: function () {
+        login() {
             if (this.user.name == '') return;
             socket.emit('login', this.user, (user) => {
                 if (user == null) return;

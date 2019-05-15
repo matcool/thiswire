@@ -7,30 +7,24 @@ let app = express();
 let http = require('http').Server(app);
 let io = socketio(http);
 
-let msgid = 0;
 const messages = [];
-let userid = 0;
 const users = [];
-
-db.connect(err => {
-    if (err) {
-        console.log('Error while conecting to database');
-        console.error(err);
-        process.exit(1);
-    } else {
-        console.log('Connected to database');
-    }
-});
 
 function addMessage(msg) {
     msg = {
-        id: msgid,
         text: msg.text,
-        author: users[msg.author],
+        author: msg.author,
         timestamp: new Date()
     };
-    messages.push(msg);
-    msgid++;
+    db.getDB().collection('messages').insertOne(msg, (err, result) => {
+        if (err) {
+            console.error(err);
+            msg = null;
+        } else {
+            msg = result;
+            messages.push(msg);
+        }
+    });
     return msg;
 }
 
@@ -42,14 +36,65 @@ Object.freeze(StatusEnum);
 
 function addUser(user) {
     user = {
-        id: userid,
-        name: user.name,
-        status: StatusEnum.ONLINE
+        name: user.name
     };
-    users.push(user);
-    userid++;
+    db.getDB().collection('users').insertOne(user, (err, result) => {
+        if (err) {
+            console.error(err);
+            user = null;
+        } else {
+            user = result;
+            user.status = StatusEnum.ONLINE;
+            users.push(user);
+        }
+    });
     return user;
 }
+
+db.connect(err => {
+    if (err) {
+        console.log('Error while conecting to database');
+        console.error(err);
+        process.exit(1);
+    } else {
+        console.log('Connected to database');
+        // Get users and messages
+        db.getDB().collection('users').find({}).toArray((err, documents) => {
+            if (err) {
+                console.error(err);
+            } else {
+                for (let user of documents) {
+                    user.status = StatusEnum.OFFLINE;
+                    users.push(user);
+                }
+                console.log(`Found ${documents.length} users`);
+            }
+        });
+        db.getDB().collection('messages').find({}).toArray((err, documents) => {
+            if (err) {
+                console.error(err);
+            } else {
+                for (let message of documents) {
+                    messages.push(message);
+                }
+                console.log(`Found ${documents.length} messages`);
+            }
+        });
+    }
+});
+
+app.get('/getUser', (req, res) => {
+    db.getDB().collection('users').find({_id: db.getPrimaryKey(req.query.id)}).toArray((err, result) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({
+                type: 'error'
+            });
+        } else {
+            res.json(result[0]);
+        }
+    });
+});
 
 function findUser(atr) {
     for (let i = 0; i < users.length; i++) {
@@ -69,7 +114,7 @@ app.use(express.static('client'));
 
 io.on('connection', (socket) => {
     console.log('New connection');
-    let id;
+    let connectedUser;
     socket.on('login', (user, callback) => {
         // Look for another user with same name and check if logged in
         let usr = findUser({
@@ -86,7 +131,7 @@ io.on('connection', (socket) => {
             user = usr;
         }
 
-        id = user.id;
+        connectedUser = user;
         callback(user);
 
         io.emit('chat messages', messages);
@@ -99,13 +144,8 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('Disconnected');
         // Set loggedIn to false when disconnected
-        if (id !== null) {
-            let usr = findUser({
-                id: id
-            });
-            if (usr != null) {
-                usr.status = StatusEnum.OFFLINE;
-            }
+        if (connectedUser) {
+            connectedUser.status = StatusEnum.OFFLINE;
         }
         io.emit('user disconnected');
     });
