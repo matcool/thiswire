@@ -1,3 +1,4 @@
+'use strict';
 const socket = io();
 const md = window.markdownit({
     breaks: true,
@@ -8,7 +9,7 @@ const imgpfp = 'https://images.unsplash.com/photo-1556220881-df28b44798ce?ixlib=
 
 Vue.component('message', {
     props: ['message'],
-    template: `<div class="message-parent"><img class="message-pfp" src="${imgpfp}"><div><span class="message-nickname">{{ message.author.name }}</span>\
+    template: `<div class="message-parent"><img class="message-pfp" src="${imgpfp}"><div><span class="message-nickname">{{ message.author.name }}</span>
 <span class="message-time">{{ timestampstr }}</span><br>
 <div class="message-text" v-html="content"></div></div></div>`,
     computed: {

@@ -1,3 +1,4 @@
+'use strict';
 const express = require('express');
 const socketio = require('socket.io');
 
@@ -22,11 +23,17 @@ function addMessage(msg) {
     return msg;
 }
 
+const StatusEnum = {
+    OFFLINE: 0,
+    ONLINE: 1
+};
+Object.freeze(StatusEnum);
+
 function addUser(user) {
     user = {
         id: userid,
         name: user.name,
-        loggedIn: true
+        status: StatusEnum.ONLINE
     };
     users.push(user);
     userid++;
@@ -57,13 +64,13 @@ io.on('connection', (socket) => {
         let usr = findUser({
             name: user.name
         });
-        if (usr == null) {
+        if (usr === null) {
             console.log('new user! ' + JSON.stringify(user, undefined, 4));
             user = addUser(user);
-        } else if (usr.loggedIn) {
+        } else if (usr.status !== StatusEnum.OFFLINE) {
             callback(null);
             return;
-        } else if (!usr.loggedIn) {
+        } else if (usr.status === StatusEnum.OFFLINE) {
             console.log(user.name + ' logged back in');
             user = usr;
         }
@@ -86,7 +93,7 @@ io.on('connection', (socket) => {
                 id: id
             });
             if (usr != null) {
-                usr.loggedIn = false;
+                usr.status = StatusEnum.OFFLINE;
             }
         }
         io.emit('user disconnected');
