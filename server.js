@@ -26,6 +26,7 @@ const messages = [];
 const users = [];
 
 function addMessage(msg) {
+    // Re-define msg incase it has extra attributes
     msg = {
         text: msg.text,
         author: msg.author,
@@ -50,6 +51,7 @@ const StatusEnum = {
 Object.freeze(StatusEnum);
 
 function addUser(user) {
+    // Re-define user incase it has extra attributes
     user = {
         name: user.name
     };
@@ -99,14 +101,26 @@ db.connect(err => {
 });
 
 app.get('/getUser', (req, res) => {
+    if (!db.validID(req.query.id)) {
+        res.json({
+            type: 'error',
+            message: 'Invalid ID'
+        });
+        return
+    }
     db.getDB().collection('users').find({_id: db.getPrimaryKey(req.query.id)}).toArray((err, result) => {
         if (err) {
             logger.warn(`Error while getting user (/getUser?id=${req.query.id}): ${err}`);
             res.status(500).json({
-                type: 'error'
+                type: 'error',
+                message: 'Error when getting user '+req.query.id
             });
         } else {
-            res.json(result[0]);
+            if (result.length === 0) {
+                res.json({});
+            } else {
+                res.json(result[0]);
+            }
         }
     });
 });

@@ -33,4 +33,8 @@ function getDB() {
     return state.db;
 }
 
-module.exports = {connect, getPrimaryKey, getDB};
+function validID(id) {
+    return ObjectID.isValid(id);
+}
+
+module.exports = {connect, getPrimaryKey, getDB, validID};
