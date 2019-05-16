@@ -23,12 +23,9 @@ Vue.component('message', {
     asyncComputed: {
         author: {
             get() {
-                return axios.get('/getUser', {
-                    params: {
-                        id: this.message.author
-                    }
-                }).then(response => {
-                    if (response.data === '') {
+                return axios.get('/getUser', {params: {id: this.message.author}})
+                .then(response => {
+                    if (response.data.type === 'error') {
                         return 'error';
                     }
                     return response.data.name;
@@ -79,7 +76,7 @@ const app = new Vue({
         login() {
             if (this.user.name == '') return;
             socket.emit('login', this.user, (user) => {
-                if (user == null) return;
+                if (user.type === 'error') return;
                 this.loggedIn = true;
                 this.user = user;
             });

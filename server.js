@@ -22,8 +22,7 @@ let app = express();
 let http = require('http').Server(app);
 let io = socketio(http);
 
-const messages = [];
-const users = [];
+const users = {};
 
 function addMessage(msg) {
     // Re-define msg incase it has extra attributes
@@ -38,7 +37,6 @@ function addMessage(msg) {
             msg = null;
         } else {
             msg = result;
-            messages.push(msg);
         }
     });
     return msg;
@@ -60,9 +58,13 @@ function addUser(user) {
             logger.error('Error while trying to add a user: '+err);
             user = null;
         } else {
-            user = result;
-            user.status = StatusEnum.ONLINE;
-            users.push(user);
+            // Local user only stores their ids and status
+            // since status dont need to be saved on the db
+            result = result.ops[0];
+            user = {
+                status: StatusEnum.ONLINE
+            };
+            users[result._id.toHexString()] = user;
         }
     });
     return user;
@@ -74,27 +76,19 @@ db.connect(err => {
         process.exit(1);
     } else {
         logger.info('Connected to database');
-        // Get users and messages
-        logger.info('Getting users and messages');
+        // Get users
+        logger.info('Getting users');
         db.getDB().collection('users').find({}).toArray((err, documents) => {
             if (err) {
                 logger.error('Error while getting users: '+err);
             } else {
                 for (let user of documents) {
-                    user.status = StatusEnum.OFFLINE;
-                    users.push(user);
+                    let usr = {
+                        status: StatusEnum.OFFLINE
+                    };
+                    users[user._id.toHexString()] = usr;
                 }
                 logger.log('verbose', `Found ${documents.length} users`);
-            }
-        });
-        db.getDB().collection('messages').find({}).toArray((err, documents) => {
-            if (err) {
-                logger.error('Error while getting messages: '+err);
-            } else {
-                for (let message of documents) {
-                    messages.push(message);
-                }
-                logger.log('verbose', `Found ${documents.length} messages`);
             }
         });
     }
@@ -102,6 +96,7 @@ db.connect(err => {
 
 app.get('/getUser', (req, res) => {
     if (!db.validID(req.query.id)) {
+        logger.debug(`/getUser has been called with an invalid ID (${req.query.id})`);
         res.json({
             type: 'error',
             message: 'Invalid ID'
@@ -110,12 +105,13 @@ app.get('/getUser', (req, res) => {
     }
     db.getDB().collection('users').find({_id: db.getPrimaryKey(req.query.id)}).toArray((err, result) => {
         if (err) {
-            logger.warn(`Error while getting user (/getUser?id=${req.query.id}): ${err}`);
+            logger.error(`Error while getting user (/getUser?id=${req.query.id}): ${err}`);
             res.status(500).json({
                 type: 'error',
                 message: 'Error when getting user '+req.query.id
             });
         } else {
+            logger.silly(`(/getUser?id=${req.query.id}) has returned ${JSON.stringify(result[0])}`);
             if (result.length === 0) {
                 res.json({});
             } else {
@@ -125,20 +121,6 @@ app.get('/getUser', (req, res) => {
     });
 });
 
-function findUser(atr) {
-    for (let i = 0; i < users.length; i++) {
-        let temp = true;
-        for (let key of Reflect.ownKeys(atr)) {
-            if (users[i][key] != atr[key]) {
-                temp = false;
-                break;
-            }
-        }
-        if (temp) return users[i];
-    }
-    return null;
-}
-
 app.use(express.static('client'));
 
 io.on('connection', (socket) => {
@@ -146,29 +128,50 @@ io.on('connection', (socket) => {
     let connectedUser;
     socket.on('login', (user, callback) => {
         // Look for another user with same name and check if logged in
-        let usr = findUser({
-            name: user.name
-        });
-        if (usr === null) {
-            logger.info('New user')
-            logger.log('verbose', JSON.stringify(user, undefined, 4));
-            user = addUser(user);
-        } else if (usr.status !== StatusEnum.OFFLINE) {
-            callback(null);
-            return;
-        } else if (usr.status === StatusEnum.OFFLINE) {
-            logger.info(user.name + ' logged back in');
-            user = usr;
-        }
+        db.getDB().collection('users').find({name: user.name}).toArray((err, result) => {
+            if (err) {
+                logger.error(`Error while getting user (${user.name}): ${err}`);
+                callback({
+                    type: 'error',
+                    message: 'Internal error'
+                });
+            } else {
+                let usr = result[0];
+                if (usr === undefined) {
+                    logger.info('New user')
+                    logger.verbose(JSON.stringify(user, undefined, 4));
+                    user = addUser(user);
+                } else {
+                    logger.silly(JSON.stringify(users[usr._id.toHexString()]));
+                    if (users[usr._id.toHexString()].status !== StatusEnum.OFFLINE) {
+                        callback({
+                            type: 'error',
+                            message: 'User already connected'
+                        });
+                        return;
+                    } else {
+                        logger.info(user.name + ' logged back in');
+                        user = usr;
+                    }
+                }
 
-        connectedUser = user;
-        callback(user);
+                connectedUser = user;
+                callback(user);
 
-        io.emit('chat messages', messages);
-        socket.on('chat message', (msg) => {
-            logger.info('New message');
-            logger.verbose(JSON.stringify(msg, undefined, 4));
-            io.emit('chat message', addMessage(msg));
+                db.getDB().collection('messages').find({}).toArray((err, result) => {
+                    if (err) {
+                        logger.error('Error while getting messages: '+err);
+                    } else {
+                        socket.emit('chat messages', result);
+                        logger.verbose(`Sent ${result.length} messages to new connection`);
+                    }
+                });
+                socket.on('chat message', (msg) => {
+                    logger.info('New message');
+                    logger.verbose(JSON.stringify(msg, undefined, 4));
+                    io.emit('chat message', addMessage(msg));
+                });
+            }
         });
     });
 
