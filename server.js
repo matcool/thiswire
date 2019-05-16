@@ -3,6 +3,21 @@ const express = require('express');
 const socketio = require('socket.io');
 const db = require('./db');
 
+const winston = require('winston');
+
+const myFormat = winston.format.printf(log => {
+  return `[${log.level}] ${log.message}`;
+});
+
+const logger = winston.createLogger({
+    level: 'silly',
+    transports: [
+        new winston.transports.Console({
+            format: winston.format.combine(winston.format.colorize(), myFormat)
+        })
+    ]
+});
+
 let app = express();
 let http = require('http').Server(app);
 let io = socketio(http);
@@ -18,7 +33,7 @@ function addMessage(msg) {
     };
     db.getDB().collection('messages').insertOne(msg, (err, result) => {
         if (err) {
-            console.error(err);
+            logger.error('Error while trying to add a message: '+err);
             msg = null;
         } else {
             msg = result;
@@ -40,7 +55,7 @@ function addUser(user) {
     };
     db.getDB().collection('users').insertOne(user, (err, result) => {
         if (err) {
-            console.error(err);
+            logger.error('Error while trying to add a user: '+err);
             user = null;
         } else {
             user = result;
@@ -53,31 +68,31 @@ function addUser(user) {
 
 db.connect(err => {
     if (err) {
-        console.log('Error while conecting to database');
-        console.error(err);
+        logger.error('Error while trying to connect to database: '+err);
         process.exit(1);
     } else {
-        console.log('Connected to database');
+        logger.info('Connected to database');
         // Get users and messages
+        logger.info('Getting users and messages');
         db.getDB().collection('users').find({}).toArray((err, documents) => {
             if (err) {
-                console.error(err);
+                logger.error('Error while getting users: '+err);
             } else {
                 for (let user of documents) {
                     user.status = StatusEnum.OFFLINE;
                     users.push(user);
                 }
-                console.log(`Found ${documents.length} users`);
+                logger.log('verbose', `Found ${documents.length} users`);
             }
         });
         db.getDB().collection('messages').find({}).toArray((err, documents) => {
             if (err) {
-                console.error(err);
+                logger.error('Error while getting messages: '+err);
             } else {
                 for (let message of documents) {
                     messages.push(message);
                 }
-                console.log(`Found ${documents.length} messages`);
+                logger.log('verbose', `Found ${documents.length} messages`);
             }
         });
     }
@@ -86,7 +101,7 @@ db.connect(err => {
 app.get('/getUser', (req, res) => {
     db.getDB().collection('users').find({_id: db.getPrimaryKey(req.query.id)}).toArray((err, result) => {
         if (err) {
-            console.error(err);
+            logger.warn(`Error while getting user (/getUser?id=${req.query.id}): ${err}`);
             res.status(500).json({
                 type: 'error'
             });
@@ -113,7 +128,7 @@ function findUser(atr) {
 app.use(express.static('client'));
 
 io.on('connection', (socket) => {
-    console.log('New connection');
+    logger.info('New connection');
     let connectedUser;
     socket.on('login', (user, callback) => {
         // Look for another user with same name and check if logged in
@@ -121,13 +136,14 @@ io.on('connection', (socket) => {
             name: user.name
         });
         if (usr === null) {
-            console.log('new user! ' + JSON.stringify(user, undefined, 4));
+            logger.info('New user')
+            logger.log('verbose', JSON.stringify(user, undefined, 4));
             user = addUser(user);
         } else if (usr.status !== StatusEnum.OFFLINE) {
             callback(null);
             return;
         } else if (usr.status === StatusEnum.OFFLINE) {
-            console.log(user.name + ' logged back in');
+            logger.info(user.name + ' logged back in');
             user = usr;
         }
 
@@ -136,21 +152,21 @@ io.on('connection', (socket) => {
 
         io.emit('chat messages', messages);
         socket.on('chat message', (msg) => {
-            console.log('new message! ' + JSON.stringify(msg, undefined, 4));
+            logger.info('New message');
+            logger.verbose(JSON.stringify(msg, undefined, 4));
             io.emit('chat message', addMessage(msg));
         });
     });
 
     socket.on('disconnect', () => {
-        console.log('Disconnected');
+        logger.info('Disconnected');
         // Set loggedIn to false when disconnected
         if (connectedUser) {
             connectedUser.status = StatusEnum.OFFLINE;
         }
-        io.emit('user disconnected');
     });
 });
 
 http.listen(3000, () => {
-    console.log('Started server on port 3000');
+    logger.info('Started server on port 3000');
 })
