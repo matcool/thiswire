@@ -76,21 +76,6 @@ db.connect(err => {
         process.exit(1);
     } else {
         logger.info('Connected to database');
-        // Get users
-        logger.info('Getting users');
-        db.getDB().collection('users').find({}).toArray((err, documents) => {
-            if (err) {
-                logger.error('Error while getting users: '+err);
-            } else {
-                for (let user of documents) {
-                    let usr = {
-                        status: StatusEnum.OFFLINE
-                    };
-                    users[user._id.toHexString()] = usr;
-                }
-                logger.log('verbose', `Found ${documents.length} users`);
-            }
-        });
     }
 });
 
@@ -142,8 +127,7 @@ io.on('connection', (socket) => {
                     logger.verbose(JSON.stringify(user, undefined, 4));
                     user = addUser(user);
                 } else {
-                    logger.silly(JSON.stringify(users[usr._id.toHexString()]));
-                    if (users[usr._id.toHexString()].status !== StatusEnum.OFFLINE) {
+                    if (users[usr._id.toHexString()]) {
                         callback({
                             type: 'error',
                             message: 'User already connected'
@@ -151,6 +135,9 @@ io.on('connection', (socket) => {
                         return;
                     } else {
                         logger.info(user.name + ' logged back in');
+                        users[usr._id.toHexString()] = {
+                            status: StatusEnum.ONLINE
+                        };
                         user = usr;
                     }
                 }
@@ -177,9 +164,9 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         logger.info('Disconnected');
-        // Set loggedIn to false when disconnected
+        // Remove user from list of online users
         if (connectedUser) {
-            connectedUser.status = StatusEnum.OFFLINE;
+            delete users[connectedUser._id];
         }
     });
 });
