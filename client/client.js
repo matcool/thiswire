@@ -6,10 +6,12 @@ const md = window.markdownit({
 });
 
 const imgpfp = 'https://images.unsplash.com/photo-1556220881-df28b44798ce?ixlib=rb-1.2.1&q=80&fm=jpg&crop=entropy&cs=tinysrgb&w=100&h=100&fit=crop&ixid=eyJhcHBfaWQiOjF9';
+const userCache = {};
+const pendingRequests = {};
 
 Vue.component('message', {
     props: ['message'],
-    template: `<div class="message-parent"><img class="message-pfp" src="${imgpfp}"><div><span class="message-nickname">{{ author }}</span>
+    template: `<div class="message-parent"><img class="message-pfp" src="${imgpfp}"><div><span class="message-nickname">{{ author.name }}</span>
 <span class="message-time">{{ timestampstr }}</span><br>
 <div class="message-text" v-html="content"></div></div></div>`,
     computed: {
@@ -23,15 +25,23 @@ Vue.component('message', {
     asyncComputed: {
         author: {
             get() {
-                return axios.get('/getUser', {params: {id: this.message.author}})
+                if (userCache[this.message.author]) return userCache[this.message.author];
+                if (pendingRequests[this.message.author]) return pendingRequests[this.message.author];
+                let req = axios.get('/getUser', {params: {id: this.message.author}})
                 .then(response => {
                     if (response.data.type === 'error') {
                         return 'error';
                     }
-                    return response.data.name;
+                    userCache[this.message.author] = response.data;
+                    delete pendingRequests[this.message.author];
+                    return response.data;
                 });
+                pendingRequests[this.message.author] = req;
+                return req;
             },
-            default: 'loading...'
+            default: {
+                name: 'loading...'
+            }
         }
     }
 });
