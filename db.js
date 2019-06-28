@@ -1,12 +1,8 @@
 'use strict';
-// Big help from this tutorial: https://youtu.be/CyTWPr_WwdI
-
-const mongodb = require('mongodb');
-const MongoClient = mongodb.MongoClient;
-const ObjectID = mongodb.ObjectID;
+const mongoose = require('mongoose');
 const dbname = 'thiswire';
-const url = 'mongodb://localhost:27017';
-const mongoOptions = {useNewUrlParser: true};
+const url = 'mongodb://localhost:27017/'+dbname;
+const connOptions = {useNewUrlParser: true};
 
 const state = {
     db: null
@@ -15,26 +11,15 @@ const state = {
 function connect(callback) {
     if (state.db) callback();
     else {
-        MongoClient.connect(url, mongoOptions, (err, client) => {
-            if (err) callback(err);
-            else {
-                state.db = client.db(dbname);
-                callback();
-            }
-        });
+        mongoose.connect(url, connOptions);
+        let db = mongoose.connection;
+        state.db = db;
+        db.on('error', callback);
+        db.once('open', () => callback());
     }
-}
-
-function getPrimaryKey(_id) {
-    return ObjectID(_id);
 }
 
 function getDB() {
     return state.db;
 }
-
-function validID(id) {
-    return ObjectID.isValid(id);
-}
-
-module.exports = {connect, getPrimaryKey, getDB, validID};
+module.exports = {connect, getDB, validID: mongoose.mongo.ObjectID.isValid, mongoose};
