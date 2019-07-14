@@ -70,26 +70,31 @@ const app = new Vue({
     data: {
         message: '',
         loggedIn: false,
-        user: {
-            name: ''
-        }
+        user: {}
     },
     methods: {
         sendMessage() {
             if (this.message == '') return;
             socket.emit('chat message', {
-                text: this.message,
-                author: this.user._id
+                text: this.message
             });
             this.message = '';
         },
         login() {
-            if (this.user.name == '') return;
+            if (!localStorage.getItem('name')){
+                window.location.replace('../login.html');
+                return;
+            } else {
+                this.user.name = localStorage.getItem('name');
+            }
             socket.emit('login', this.user, (user) => {
                 if (user.type === 'error') return;
                 this.loggedIn = true;
                 this.user = user;
             });
         }
+    },
+    beforeMount() {
+        this.login();
     }
 });

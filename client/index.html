@@ -9,6 +9,7 @@
         <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
         <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
         <script src="https://unpkg.com/vue-async-computed"></script>
+        <script src="client.js" defer></script>
     </head>
     <body>
         <div id="messages">
@@ -18,10 +19,6 @@
         <div id="message-sender">
             <textarea v-model="message" placeholder="Type something here..." :disabled="!loggedIn"></textarea>
             <button @click="sendMessage" :disabled="!loggedIn">Send</button>
-            <br>
-            <input v-model="user.name" type="text" placeholder="Enter your nickname" :disabled="loggedIn" />
-            <button @click="login" :disabled="loggedIn">Login</button>
         </div>
-        <script src="client.js"></script>
     </body>
 </html>

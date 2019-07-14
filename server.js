@@ -36,11 +36,11 @@ db.connect(err => {
 
 const users = {};
 
-function addMessage(msg) {
+function addMessage(msg, user) {
     // Re-define msg incase it has extra attributes
     msg = new models.Message({
-        text: msg.text,
-        author: msg.author,
+        text: msg.text.trim(),
+        author: user._id,
         timestamp: new Date()
     });
     msg.save((err, result) => {
@@ -154,7 +154,7 @@ io.on('connection', (socket) => {
                 socket.on('chat message', (msg) => {
                     logger.info('New message');
                     logger.verbose(JSON.stringify(msg, undefined, 4));
-                    io.emit('chat message', addMessage(msg));
+                    io.emit('chat message', addMessage(msg, connectedUser));
                 });
             }
         });
@@ -171,5 +171,5 @@ io.on('connection', (socket) => {
 
 http.listen(3000, () => {
     logger.info('Started server on port 3000');
-    open(`http://localhost:3000`);
+    // open(`http://localhost:3000`);
 })
