@@ -37,7 +37,6 @@ db.connect(err => {
 const users = {};
 
 function addMessage(msg, user) {
-    // Re-define msg incase it has extra attributes
     msg = new models.Message({
         text: msg.text.trim(),
         author: user._id,
@@ -61,7 +60,6 @@ const StatusEnum = {
 Object.freeze(StatusEnum);
 
 function addUser(user) {
-    // Re-define user incase it has extra attributes
     user = new models.User({
         name: user.name
     });

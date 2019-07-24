@@ -49,11 +49,21 @@ Vue.component('message', {
 const messages = new Vue({
     el: '#messages',
     data: {
-        messages: []
+        messages: [],
+        autoScroll: true
+    },
+    updated() {
+        this.$nextTick(function () {
+            if (this.autoScroll) {
+                this.$el.scrollTop = this.$el.scrollTopMax;
+            }
+        })
     }
 });
 
 function addMessage(msg) {
+    let div = messages.$el;
+    messages.autoScroll = div.scrollTop == div.scrollTopMax;
     messages.messages.push(msg);
 }
 
