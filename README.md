@@ -13,6 +13,6 @@ mongod
 # Or if you want to change the database folder
 mongod --dbpath <path>
 ```
-Now to start the server, run `node server.js` and go to http://localhost:3000
-
-Currently the client is just simple html and js, although it will in the future be changed to use stuff like webpack, vue file components, single page apps, etc
+Now to start the server, run `node server.js`
+# Client
+Client can now be found at https://github.com/thiswire/thiswire-client
