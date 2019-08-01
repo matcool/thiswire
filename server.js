@@ -1,7 +1,7 @@
 'use strict';
-const open = require('open');
 const express = require('express');
 const socketio = require('socket.io');
+const cors = require('cors');
 const db = require('./db');
 let models = require('./models');
 
@@ -23,6 +23,8 @@ const logger = winston.createLogger({
 let app = express();
 let http = require('http').Server(app);
 let io = socketio(http);
+
+app.use(cors())
 
 db.connect(err => {
     if (err) {
@@ -102,8 +104,6 @@ app.get('/getUser', (req, res) => {
     });
 });
 
-app.use(express.static('client'));
-
 io.on('connection', (socket) => {
     logger.info('New connection');
     let connectedUser;
@@ -169,5 +169,4 @@ io.on('connection', (socket) => {
 
 http.listen(3000, () => {
     logger.info('Started server on port 3000');
-    // open(`http://localhost:3000`);
 })
