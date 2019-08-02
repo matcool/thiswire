@@ -1,7 +1,7 @@
 'use strict';
+const env = require('./getenv.js');
 const mongoose = require('mongoose');
-const dbname = 'thiswire';
-const url = 'mongodb://localhost:27017/'+dbname;
+const url = `mongodb://${env.DB_HOST}/${env.DB_NAME}`;
 const connOptions = {useNewUrlParser: true};
 
 const state = {

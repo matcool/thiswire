@@ -10,6 +10,8 @@
     "license": "ISC",
     "dependencies": {
         "cors": "^2.8.5",
+        "dotenv": "^8.0.0",
+        "dotenv-parse-variables": "^0.2.2",
         "express": "^4.17.1",
         "express-session": "^1.16.2",
         "lodash": ">=4.17.13",

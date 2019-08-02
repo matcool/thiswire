@@ -1,5 +1,7 @@
 db/
 
+.env
+
 # Logs
 logs
 *.log

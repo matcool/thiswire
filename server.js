@@ -1,8 +1,10 @@
 'use strict';
+const env = require('./getenv.js');
 const express = require('express');
 const socketio = require('socket.io');
 const cors = require('cors');
 const db = require('./db');
+const fs = require('fs');
 let models = require('./models');
 
 const winston = require('winston');
@@ -21,7 +23,15 @@ const logger = winston.createLogger({
 });
 
 let app = express();
-let http = require('http').Server(app);
+let http = require(env.HTTPS ? 'https' : 'http');
+if (env.HTTPS) {
+    logger.info('HTTPS enabled, reading key and cert files');
+    let key  = fs.readFileSync(env.HTTPS_KEYPATH, 'utf8');
+    let cert = fs.readFileSync(env.HTTPS_CERTPATH, 'utf8');
+    http = http.createServer({key, cert}, app);
+} else {
+    http = http.createServer(app);
+}
 let io = socketio(http);
 
 app.use(cors())
@@ -167,6 +177,6 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(3000, () => {
-    logger.info('Started server on port 3000');
+http.listen(env.PORT, () => {
+    logger.info(`Started server on port ${env.PORT}`);
 })
