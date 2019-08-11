@@ -1,6 +1,6 @@
 {
     "name": "thiswire",
-    "version": "0.0.0",
+    "version": "0.3.0",
     "description": "Basic chat app",
     "main": "server.js",
     "scripts": {
