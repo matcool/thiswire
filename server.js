@@ -34,7 +34,7 @@ if (env.HTTPS) {
 }
 let io = socketio(http);
 
-app.use(cors())
+app.use(cors());
 
 db.connect(err => {
     if (err) {
@@ -43,16 +43,20 @@ db.connect(err => {
     } else {
         logger.info('Connected to database');
         models = models(db.mongoose);
+        // Only register routes now to prevent it trying to access the db before it has loaded
+        require('./routes/routes.js')({app, db, models, logger});
     }
 });
 
 const users = {};
 
 function addMessage(msg, user) {
+    if (!msg.text || !msg.text.trim() || !msg.channel) return;
     msg = new models.Message({
         text: msg.text.trim(),
         author: user._id,
-        timestamp: new Date()
+        timestamp: new Date(),
+        channel: msg.channel
     });
     msg.save((err, result) => {
         if (err) {
@@ -90,29 +94,6 @@ function addUser(user) {
     });
     return user;
 }
-
-app.get('/getUser', (req, res) => {
-    if (!db.validID(req.query.id)) {
-        logger.debug(`/getUser has been called with an invalid ID (${req.query.id})`);
-        res.json({
-            type: 'error',
-            message: 'Invalid ID'
-        });
-        return
-    }
-    models.User.findById(req.query.id, (err, result) => {
-        if (err) {
-            logger.error(`Error while getting user (/getUser?id=${req.query.id}): ${err}`);
-            res.status(500).json({
-                type: 'error',
-                message: 'Error when getting user ' + req.query.id
-            });
-        } else {
-            logger.silly(`(/getUser?id=${req.query.id}) has returned ${JSON.stringify(result)}`);
-            res.json(result);
-        }
-    });
-});
 
 io.on('connection', (socket) => {
     logger.info('New connection');
