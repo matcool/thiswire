@@ -1,6 +1,6 @@
 {
     "name": "thiswire",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Basic chat app",
     "main": "server.js",
     "scripts": {
@@ -9,6 +9,7 @@
     "author": "mat",
     "license": "MIT",
     "dependencies": {
+        "bcrypt": "^3.0.6",
         "cors": "^2.8.5",
         "dotenv": "^8.0.0",
         "dotenv-parse-variables": "^0.2.2",
@@ -17,6 +18,7 @@
         "lodash": ">=4.17.13",
         "mongoose": "^5.6.4",
         "socket.io": "^2.2.0",
+        "uuid": "^3.3.3",
         "winston": "^3.2.1"
     },
     "repository": {

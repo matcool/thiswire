@@ -3,7 +3,7 @@ module.exports = (vars) => {
     const db = vars.db;
     const models = vars.models;
     const logger = vars.logger;
-    app.get('/createChannel', (req, res) => {
+    app.post('/createChannel', (req, res) => {
         if (!db.validID(req.query.guildId)) {
             logger.debug(`/createChannel has been called with an invalid ID (${req.query.guildId})`);
             res.json({

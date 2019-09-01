@@ -3,7 +3,9 @@ module.exports = mongoose => {
     const Types = mongoose.Schema.Types;
 
     let userSchema = new mongoose.Schema({
-        name: String
+        name: String,
+        password: String, // bcrypt encrypted
+        token: String
     });
     let User = new mongoose.model('User', userSchema);
 

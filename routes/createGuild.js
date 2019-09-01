@@ -3,7 +3,7 @@ module.exports = (vars) => {
     const db = vars.db;
     const models = vars.models;
     const logger = vars.logger;
-    app.get('/createGuild', (req, res) => {
+    app.post('/createGuild', (req, res) => {
         if (!req.query.name || !req.query.name.trim()) {
             res.json({
                 type: 'error',

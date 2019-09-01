@@ -44,11 +44,11 @@ db.connect(err => {
         logger.info('Connected to database');
         models = models(db.mongoose);
         // Only register routes now to prevent it trying to access the db before it has loaded
-        require('./routes/routes.js')({app, db, models, logger});
+        require('./routes/routes.js')({app, db, models, logger, env});
     }
 });
 
-const users = {};
+const users = [];
 
 function addMessage(msg, user) {
     if (!msg.text || !msg.text.trim() || !msg.channel) return;
@@ -69,83 +69,39 @@ function addMessage(msg, user) {
     return msg;
 }
 
-const StatusEnum = {
-    OFFLINE: 0,
-    ONLINE: 1
-};
-Object.freeze(StatusEnum);
-
-function addUser(user) {
-    user = new models.User({
-        name: user.name
-    });
-    user.save((err, result) => {
-        if (err) {
-            logger.error('Error while trying to add a user: ' + err);
-            user = null;
-        } else {
-            // Local user only stores their ids and status
-            // since status dont need to be saved on the db
-            user = {
-                status: StatusEnum.ONLINE
-            };
-            users[result._id.toHexString()] = user;
-        }
-    });
-    return user;
-}
-
 io.on('connection', (socket) => {
     logger.info('New connection');
     let connectedUser;
-    socket.on('login', (user, callback) => {
-        // Look for another user with same name and check if logged in
-        models.User.findOne({ name: user.name }, (err, result) => {
+    socket.on('login', async token => {
+        let result;
+        try {
+            result = await models.User.findOne({ token }).exec();
+        } catch (e) {
+            logger.error('Error while getting user: ' + e);
+            return;
+        }
+        if (!result || users.includes(result._id.toHexString())) return;
+        users.push(result._id.toHexString());
+        socket.emit('logged in', {
+            name: result.name,
+            _id: result._id
+        });
+
+        connectedUser = result;
+
+        models.Message.find({}, (err, result) => {
             if (err) {
-                logger.error(`Error while getting user (${user.name}): ${err}`);
-                callback({
-                    type: 'error',
-                    message: 'Internal error'
-                });
+                logger.error('Error while getting messages: ' + err);
             } else {
-                let usr = result;
-                if (usr === null) {
-                    logger.info('New user')
-                    logger.verbose(JSON.stringify(user, undefined, 4));
-                    user = addUser(user);
-                } else {
-                    if (users[usr._id.toHexString()]) {
-                        callback({
-                            type: 'error',
-                            message: 'User already connected'
-                        });
-                        return;
-                    } else {
-                        logger.info(user.name + ' logged back in');
-                        users[usr._id.toHexString()] = {
-                            status: StatusEnum.ONLINE
-                        };
-                        user = usr;
-                    }
-                }
-
-                connectedUser = user;
-                callback(user);
-
-                models.Message.find({}, (err, result) => {
-                    if (err) {
-                        logger.error('Error while getting messages: ' + err);
-                    } else {
-                        socket.emit('chat messages', result);
-                        logger.verbose(`Sent ${result.length} messages to new connection`);
-                    }
-                });
-                socket.on('chat message', (msg) => {
-                    logger.info('New message');
-                    logger.verbose(JSON.stringify(msg, undefined, 4));
-                    io.emit('chat message', addMessage(msg, connectedUser));
-                });
+                socket.emit('chat messages', result);
+                logger.verbose(`Sent ${result.length} messages to new connection`);
             }
+        });
+
+        socket.on('chat message', (msg) => {
+            logger.info('New message');
+            logger.verbose(JSON.stringify(msg, undefined, 4));
+            io.emit('chat message', addMessage(msg, connectedUser));
         });
     });
 
@@ -153,11 +109,12 @@ io.on('connection', (socket) => {
         logger.info('Disconnected');
         // Remove user from list of online users
         if (connectedUser) {
-            delete users[connectedUser._id];
+            let i = users.indexOf(connectedUser._id.toHexString());
+            if (i > -1) users.splice(i, 1);
         }
     });
 });
 
 http.listen(env.PORT, () => {
     logger.info(`Started server on port ${env.PORT}`);
-})
+});
