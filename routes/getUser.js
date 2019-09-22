@@ -20,8 +20,11 @@ module.exports = (vars) => {
                     message: 'Error when getting user ' + req.query.id
                 });
             } else {
-                logger.silly(`(/getUser?id=${req.query.id}) has returned ${JSON.stringify(result)}`);
-                res.json(result);
+                // Filter out important data
+                res.json({
+                    _id: result._id,
+                    name: result.name
+                });
             }
         });
     });
